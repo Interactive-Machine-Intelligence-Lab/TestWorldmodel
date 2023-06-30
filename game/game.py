@@ -8,10 +8,9 @@ import pygame
 from PIL import Image
 import torch
 
-from envs import WorldModelEnv
+from worldmodel_env import WorldModelEnv
 from game.keymap import get_keymap_and_action_names
 from utils import make_video
-from episode import Episode
 
 class Game:
     def __init__(self, env: Union[gym.Env, WorldModelEnv], keymap_name: str, size: Tuple[int, int], fps: int, verbose: bool, record_mode: bool) -> None:
@@ -137,7 +136,7 @@ class Game:
             if self.verbose:
                 clear_header()
                 draw_text(f'Action: {self.action_names[action]}', idx_line=0)
-                draw_text(f'Reward: {reward if isinstance(reward, float) else reward.item(): .2f}', idx_line=1)
+                draw_text(f'Reward: {reward[0][0] if isinstance(reward, float) else reward[0][0].argmax().item(): .2f}', idx_line=1)
                 draw_text(f'Done: {done}', idx_line=2)
                 if info is not None:
                     assert isinstance(info, dict)
@@ -163,25 +162,10 @@ class Game:
 
         pygame.quit()
 
-    def torch_save(self, dir) -> None:
-        assert len(self.observations) == len(self.actions) == len(self.rewards) == len(self.dones) != 0
-        for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [self.observations, self.actions, self.rewards, self.dones]))):         
-            print(torch.ByteTensor(o).shape)
-            episode = Episode(
-                observations=torch.ByteTensor(o).permute(0, 3, 1, 2).contiguous(),  # channel-first
-                actions=torch.LongTensor(a),
-                rewards=torch.FloatTensor(r),
-                ends=torch.LongTensor(d),
-                mask_padding=torch.ones(d.shape[0], dtype=torch.bool),
-            )
-
-        episode.save(dir)
-
     def save_recording(self, frames):
         self.record_dir.mkdir(exist_ok=True, parents=True)
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         # np.save(self.record_dir / timestamp, frames)
-        self.torch_save(self.record_dir / (timestamp + '.pt'))
         # make_video(self.record_dir / f'{timestamp}.mp4', fps=15, frames=frames)
         print(f'Saved recording {timestamp}.')
         

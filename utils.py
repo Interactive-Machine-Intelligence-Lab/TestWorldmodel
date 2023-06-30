@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from episode import Episode
-
 
 def configure_optimizer(model, learning_rate, weight_decay, *blacklist_module_names):
     """Credits to https://github.com/karpathy/minGPT"""
@@ -102,35 +100,6 @@ class LossWithIntermediateLosses:
             self.intermediate_losses[k] = v / value
         self.loss_total = self.loss_total / value
         return self
-
-
-class EpisodeDirManager:
-    def __init__(self, episode_dir: Path, max_num_episodes: int) -> None:
-        self.episode_dir = episode_dir
-        self.episode_dir.mkdir(parents=True, exist_ok=True)
-        self.max_num_episodes = max_num_episodes
-        self.best_return = float('-inf')
-
-    def save(self, episode: Episode, episode_id: int, epoch: int) -> None:
-        if self.max_num_episodes is not None and self.max_num_episodes > 0:
-            self._save(episode, episode_id, epoch)
-
-    def _save(self, episode: Episode, episode_id: int, epoch: int) -> None:
-        ep_paths = [p for p in self.episode_dir.iterdir() if p.stem.startswith('episode_')]
-        assert len(ep_paths) <= self.max_num_episodes
-        if len(ep_paths) == self.max_num_episodes:
-            to_remove = min(ep_paths, key=lambda ep_path: int(ep_path.stem.split('_')[1]))
-            to_remove.unlink()
-        episode.save(self.episode_dir / f'episode_{episode_id}_epoch_{epoch}.pt')
-
-        ep_return = episode.compute_metrics().episode_return
-        if ep_return > self.best_return:
-            self.best_return = ep_return
-            path_best_ep = [p for p in self.episode_dir.iterdir() if p.stem.startswith('best_')]
-            assert len(path_best_ep) in (0, 1)
-            if len(path_best_ep) == 1:
-                path_best_ep[0].unlink()
-            episode.save(self.episode_dir / f'best_episode_{episode_id}_epoch_{epoch}.pt')
 
 
 class RandomHeuristic:

@@ -12,15 +12,14 @@ import torchvision
 
 class WorldModelEnv:
 
-    def __init__(self, tokenizer: torch.nn.Module, world_model: torch.nn.Module, device: Union[str, torch.device], env: Optional[gym.Env] = None) -> None:
+    def __init__(self, tokenizer: torch.nn.Module, world_model: torch.nn.Module, device: Union[str, torch.device], inital_obs) -> None:
 
         self.device = torch.device(device)
         self.world_model = world_model.to(self.device).eval()
         self.tokenizer = tokenizer.to(self.device).eval()
 
         self.keys_values_wm, self.obs_tokens, self._num_observations_tokens = None, None, None
-
-        self.env = env
+        self.inital_obs = inital_obs
 
     @property
     def num_observations_tokens(self) -> int:
@@ -28,8 +27,7 @@ class WorldModelEnv:
 
     @torch.no_grad()
     def reset(self) -> torch.FloatTensor:
-        assert self.env is not None
-        obs = torchvision.transforms.functional.to_tensor(self.env.reset()).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
+        obs = torchvision.transforms.functional.to_tensor(self.inital_obs).to(self.device).unsqueeze(0)  # (1, C, H, W) in [0., 1.]
         return self.reset_from_initial_observations(obs)
 
     @torch.no_grad()

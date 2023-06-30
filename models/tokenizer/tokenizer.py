@@ -9,7 +9,6 @@ from einops import rearrange
 import torch
 import torch.nn as nn
 
-from dataset import Batch
 from .lpips import LPIPS
 from .nets import Encoder, Decoder
 from utils import LossWithIntermediateLosses
@@ -43,7 +42,7 @@ class Tokenizer(nn.Module):
         reconstructions = self.decode(decoder_input, should_postprocess)
         return outputs.z, outputs.z_quantized, reconstructions
 
-    def compute_loss(self, batch: Batch, **kwargs: Any) -> LossWithIntermediateLosses:
+    def compute_loss(self, batch, **kwargs: Any) -> LossWithIntermediateLosses:
         assert self.lpips is not None
         observations = self.preprocess_input(rearrange(batch['observations'], 'b t c h w -> (b t) c h w'))
         z, z_quantized, reconstructions = self(observations, should_preprocess=False, should_postprocess=False)

@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dataset import Batch
 from .kv_caching import KeysValues
 from .slicer import Embedder, Head
 from .tokenizer import Tokenizer
@@ -59,8 +58,8 @@ class WorldModel(nn.Module):
             head_module=nn.Sequential(
                 nn.Linear(config.embed_dim, config.embed_dim),
                 nn.ReLU(),
-                nn.Linear(config.embed_dim, 1),
-                nn.Tanh(),
+                nn.Linear(config.embed_dim, 3),
+                # nn.Tanh(),
             )
         )
 
@@ -105,7 +104,7 @@ class WorldModel(nn.Module):
             return out
 
 
-    def compute_loss(self, batch: Batch, tokenizer: Tokenizer, **kwargs: Any) -> LossWithIntermediateLosses:
+    def compute_loss(self, batch, tokenizer: Tokenizer, **kwargs: Any) -> LossWithIntermediateLosses:
 
         with torch.no_grad():
             obs_tokens = tokenizer.encode(batch['observations'], should_preprocess=True).tokens  # (BL, K)
