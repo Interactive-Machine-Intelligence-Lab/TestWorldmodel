@@ -6,6 +6,7 @@ import shutil
 
 import numpy as np
 import torch
+import imageio
 import torch.nn as nn
 
 
@@ -120,4 +121,6 @@ def make_video(fname, fps, frames):
     video = cv2.VideoWriter(str(fname), cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
     for frame in frames:
         video.write(frame[:, :, ::-1])
+
+    imageio.mimsave('tes.gif', frames)
     video.release()

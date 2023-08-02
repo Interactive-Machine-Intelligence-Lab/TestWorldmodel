@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Union, List
-
+import time
 import gym
 import numpy as np
 import pygame
@@ -11,6 +11,16 @@ import torch
 from worldmodel_env import WorldModelEnv
 from game.keymap import get_keymap_and_action_names
 from utils import make_video
+EPISODE_REPLAY_ACTION_NAMES = [
+    'stop',
+    'forward',
+    'backwrad',
+    'turnright',
+    'turnleft',
+    'left',
+    'right',
+    'none'
+]
 
 class Game:
     def __init__(self, env: Union[gym.Env, WorldModelEnv], keymap_name: str, size: Tuple[int, int], fps: int, verbose: bool, record_mode: bool) -> None:
@@ -104,6 +114,7 @@ class Game:
                         segment_buffer = []
 
             if action == 0:
+                continue
                 pressed = pygame.key.get_pressed()
                 for key, action in self.keymap.items():
                     if pressed[key]:
@@ -113,14 +124,14 @@ class Game:
 
             if do_wait:
                 continue
-
-            obs, reward, done, info = self.env.step(action)
-
+            start = time.time()
+            obs, reward, y_action, info = self.env.step(action)
+            print("Elapsed time : ", time.time()-start)
 
             if self.record_mode:
                 self.observations.append(np.array([obs]))
                 self.rewards.append(reward)
-                self.dones.append(done)
+                self.dones.append(y_action)
                 self.actions.append(np.array(action))
 
 
@@ -137,7 +148,7 @@ class Game:
                 clear_header()
                 draw_text(f'Action: {self.action_names[action]}', idx_line=0)
                 draw_text(f'Reward: {reward[0][0] if isinstance(reward, float) else reward[0][0].argmax().item(): .2f}', idx_line=1)
-                draw_text(f'Done: {done}', idx_line=2)
+                draw_text(f'Y_action: {EPISODE_REPLAY_ACTION_NAMES[int(y_action)]}', idx_line=2)
                 if info is not None:
                     assert isinstance(info, dict)
                     for i, (k, v) in enumerate(info.items()):
@@ -146,19 +157,19 @@ class Game:
             pygame.display.flip()   # update screen
             clock.tick(self.fps)    # ensures game maintains the given frame rate
 
-            if do_reset or done:
-                self.env.reset()
-                do_reset = False
-
-                if self.record_mode:
-                    if input('Save episode? [Y/n] ').lower() != 'n':
-                        self.save_recording(np.stack(episode_buffer))
-                    episode_buffer = []
-
-                self.observations = []
-                self.actions = []
-                self.rewards = []
-                self.dones = []
+            #if do_reset or done:
+            #    # self.env.reset()
+            #    do_reset = False
+#
+            #    if self.record_mode:
+            #        if input('Save episode? [Y/n] ').lower() != 'n':
+            #            self.save_recording(np.stack(episode_buffer))
+            #        episode_buffer = []
+#
+            #    self.observations = []
+            #    self.actions = []
+            #    self.rewards = []
+            #    self.dones = []
 
         pygame.quit()
 
@@ -166,6 +177,6 @@ class Game:
         self.record_dir.mkdir(exist_ok=True, parents=True)
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         # np.save(self.record_dir / timestamp, frames)
-        # make_video(self.record_dir / f'{timestamp}.mp4', fps=15, frames=frames)
+        make_video(self.record_dir / f'{timestamp}.mp4', fps=15, frames=frames)
         print(f'Saved recording {timestamp}.')
         

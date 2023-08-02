@@ -49,7 +49,8 @@ EPISODE_REPLAY_ACTION_NAMES = [
     'turnleft',
     'turnright',
     'left',
-    'right'
+    'right',
+    "none"
 ]
 
 EPISODE_REPLAY_KEYMAP = {
